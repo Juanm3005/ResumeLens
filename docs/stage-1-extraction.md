@@ -16,7 +16,7 @@ Todos los patrones de tecnologías, formación y experiencia se ejecutan con `re
 | --- | --- | --- |
 | Correo | `(?<![\w.+-])[\w.!#$%&'*+/=?^_{}|~-]+@[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?(?:\.[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?)+` | Una parte local con caracteres habituales, `@` y un dominio de al menos dos etiquetas separadas por puntos. |
 | Teléfono | `(?<!\w)(?:\+\d{1,3}[ .-]?)?(?:\(?\d{2,4}\)?[ .-])?\d{3,4}[ .-]\d{3,4}(?!\w)` o `(?<!\w)\+?\d{10,15}(?!\w)` | Número con prefijo internacional opcional y grupos separados, o número continuo de 10–15 dígitos. Una validación posterior excluye fechas comunes `AAAA-MM-DD`, `AAAA/MM/DD` y `AAAA.MM.DD`. |
-| URL | `(?i)\b(?:https?://|www\.)[^\s<>()]+` | URL que comienza por `http://`, `https://` o `www.` y continúa hasta un espacio o delimitador. Se quita puntuación final de oración; el host determina si se agrupa como LinkedIn, GitHub o sitio web. |
+| URL | `(?i)\b(?:https?://|www\.)[^\s<>()]+` | URL que comienza por `http://`, `https://` o `www.` y continúa hasta un espacio o delimitador. Se quita puntuación final de oración; un host igual a `linkedin.com`/`github.com` o un subdominio suyo se clasifica como tal. Dominios parecidos, como `notlinkedin.com`, quedan como sitios web. |
 
 ### Cualificaciones
 
@@ -71,7 +71,7 @@ python -m resumelens .\resume.txt --output .\extraction.json
 python -m unittest discover -s tests -v
 ```
 
-Las pruebas comprueban ejemplos de cualificaciones de la consigna, variantes literales, correo/teléfono/URLs, filtro de fechas, grados, experiencia, offsets, JSON y ambos destinos de la CLI.
+Las pruebas comprueban ejemplos de cualificaciones de la consigna, variantes literales, correo/teléfono/URLs, filtro de fechas, grados, experiencia, offsets, JSON y ambos destinos de la CLI. Además, `tests/fixtures/stage1_extraction_dataset.json` contiene **88 casos de regresión**. Cada registro incluye un identificador, texto de entrada y resultados esperados; las claves omitidas deben quedar vacías. `tests/test_stage1_dataset.py` convierte cada registro en una prueba individual, valida todas las categorías y verifica que cada offset recupere el fragmento literal.
 
 ## Limitaciones conocidas
 

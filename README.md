@@ -67,7 +67,7 @@ Entre los resultados se extraen literalmente `JS`, `React.js`, `NodeJS`, `Postgr
 2. `resumelens/extraction.py` ejecuta esos patrones con `re`, crea coincidencias con texto y offsets, y agrupa los resultados en `ExtractionResult`.
 3. Los correos, teléfonos y URLs se extraen por separado de las cualificaciones. Las URLs se agrupan por host como LinkedIn, GitHub o sitio web.
 4. El resultado se puede serializar a JSON y guardar con la interfaz de consola.
-5. Se añadieron pruebas unitarias para los ejemplos de Full Stack y Machine Learning de la consigna, las variantes escritas, los datos de contacto, los títulos, la experiencia y la salida por consola/archivo.
+5. Se añadieron pruebas unitarias para los ejemplos de Full Stack y Machine Learning de la consigna, la salida por consola/archivo y un dataset de regresión independiente con **88 casos**. Ese dataset cubre las variantes del catálogo, los datos de contacto, los títulos, la experiencia y límites para evitar coincidencias parciales.
 
 Las expresiones son sensibles a los límites de palabra para evitar extraer nombres de tecnología como parte de palabras más largas. Se aplica `re.IGNORECASE`, conservando siempre mayúsculas, minúsculas y puntuación de la coincidencia original. Las decisiones de diseño, el catálogo y sus limitaciones están ampliados en el documento enlazado arriba.
 
@@ -89,6 +89,9 @@ resumelens/
 tests/
   test_cli.py
   test_extraction.py
+  test_stage1_dataset.py
+  fixtures/
+    stage1_extraction_dataset.json
 docs/
   stage-1-extraction.md
 ```
