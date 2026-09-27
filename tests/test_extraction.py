@@ -43,6 +43,24 @@ class ExtractionTests(unittest.TestCase):
         self.assertEqual(values(result.skills["databases"]), [])
         self.assertEqual(values(result.skills["tools_and_technologies"]), ["Git"])
 
+    def test_extracts_profile_relevant_qualifications_from_prose(self):
+        text = (
+            "2 years of experience developing predictive models and "
+            "data-processing pipelines. Machine-learning model development."
+        )
+
+        result = extract_resume(text)
+
+        self.assertEqual(
+            values(result.other_qualifications["machine_learning"]),
+            ["predictive models", "Machine-learning model development"],
+        )
+        self.assertEqual(
+            values(result.other_qualifications["data_processing"]),
+            ["data-processing pipelines"],
+        )
+        self.assertEqual(values(result.experience), ["2 years of experience"])
+
     def test_database_and_library_mentions_are_not_canonicalized(self):
         text = "PostgreSQL; sklearn; scikit learn; Tensor Flow; Py Torch; ReactJS."
 
@@ -84,6 +102,24 @@ class ExtractionTests(unittest.TestCase):
             ["Experience: 2.5 years", "3 yrs of professional experience"],
         )
 
+    def test_extracts_raw_experience_section_until_next_resume_heading(self):
+        text = (
+            "Professional Experience:\n"
+            "Senior Software Engineer — Acme Corp (2023–2026)\n"
+            "Built APIs with Python.\n\n"
+            "Education:\nB.Sc. Computer Science"
+        )
+
+        result = extract_resume(text)
+        section = result.experience_sections[0]
+
+        self.assertEqual(
+            section.value,
+            "Senior Software Engineer — Acme Corp (2023–2026)\nBuilt APIs with Python.",
+        )
+        self.assertEqual(text[section.start : section.end], section.value)
+        self.assertEqual(values(result.academic_degrees), ["B.Sc."])
+
     def test_match_offsets_point_to_exact_source_text(self):
         text = "María has JS and Git."
         result = extract_resume(text)
@@ -98,8 +134,12 @@ class ExtractionTests(unittest.TestCase):
 
         self.assertEqual(decoded["contacts"]["emails"], [])
         self.assertEqual(decoded["skills"]["programming_languages"], [])
+        self.assertEqual(
+            decoded["other_qualifications"]["machine_learning"], []
+        )
         self.assertEqual(decoded["academic_degrees"], [])
         self.assertEqual(decoded["experience"], [])
+        self.assertEqual(decoded["experience_sections"], [])
 
     def test_non_string_input_is_rejected(self):
         with self.assertRaises(TypeError):

@@ -86,5 +86,11 @@
   {"id":"boundary_mixed_skills_preserve_category_order","text":"Git, NodeJS, JS, Postgres, React.js","skills":{"programming_languages":["JS"],"frameworks_libraries":["NodeJS","React.js"],"databases":["Postgres"],"tools_and_technologies":["Git"]}},
   {"id":"boundary_cplusplus_version_not_partial_match","text":"C++17 experience","skills":{},"experience":[]},
   {"id":"boundary_unsupported_skill_is_ignored","text":"Elixir and Scala","skills":{}},
-  {"id":"boundary_offsets_survive_unicode_prefix","text":"María — Python, Git","skills":{"programming_languages":["Python"],"tools_and_technologies":["Git"]}}
+  {"id":"boundary_offsets_survive_unicode_prefix","text":"María — Python, Git","skills":{"programming_languages":["Python"],"tools_and_technologies":["Git"]}},
+  {"id":"experience_section_stops_at_education","text":"Professional Experience:\nDeveloper — Example Co (2024–2026)\nBuilt services with Python.\n\nEducation:\nB.Sc. Computer Science","skills":{"programming_languages":["Python"]},"experience_sections":["Developer — Example Co (2024–2026)\nBuilt services with Python."],"degrees":["B.Sc."]},
+  {"id":"profile_machine_learning_model_development","text":"Machine-learning model development","other_qualifications":{"machine_learning":["Machine-learning model development"]}},
+  {"id":"profile_predictive_models_and_data_pipelines","text":"developing predictive models and data-processing pipelines","other_qualifications":{"machine_learning":["predictive models"],"data_processing":["data-processing pipelines"]}},
+  {"id":"profile_data_processing_spaced_hyphen_variant","text":"Data processing pipeline","other_qualifications":{"data_processing":["Data processing pipeline"]}},
+  {"id":"profile_web_apps_and_backend","text":"Built web applications and backend services","other_qualifications":{"software_development":["web applications","backend services"]}},
+  {"id":"profile_terms_respect_word_boundaries","text":"webapplications backendservices predictiveModels machinelearning modeldevelopment","other_qualifications":{}}
 ]

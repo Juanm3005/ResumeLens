@@ -17,6 +17,11 @@ SKILL_CATEGORIES = (
     "databases",
     "tools_and_technologies",
 )
+OTHER_QUALIFICATION_CATEGORIES = (
+    "software_development",
+    "machine_learning",
+    "data_processing",
+)
 CONTACT_CATEGORIES = ("emails", "phones", "linkedin", "github", "websites")
 
 
@@ -40,6 +45,13 @@ def _dataset_test(case):
                 expected_skills.get(category, []),
                 f"{case['id']}: unexpected {category}",
             )
+        for category in OTHER_QUALIFICATION_CATEGORIES:
+            actual = [match.value for match in result.other_qualifications[category]]
+            self.assertEqual(
+                actual,
+                case.get("other_qualifications", {}).get(category, []),
+                f"{case['id']}: unexpected other qualification {category}",
+            )
         for category in CONTACT_CATEGORIES:
             actual = [match.value for match in result.contacts[category]]
             self.assertEqual(
@@ -57,9 +69,18 @@ def _dataset_test(case):
             case.get("experience", []),
             f"{case['id']}: unexpected experience",
         )
+        self.assertEqual(
+            [match.value for match in result.experience_sections],
+            case.get("experience_sections", []),
+            f"{case['id']}: unexpected experience sections",
+        )
 
         # Every reported span must point to the exact raw substring in the input.
-        for section in (result.contacts, result.skills):
+        for section in (
+            result.contacts,
+            result.skills,
+            result.other_qualifications,
+        ):
             for matches in section.values():
                 for match in matches:
                     self.assertEqual(
@@ -67,7 +88,11 @@ def _dataset_test(case):
                         match.value,
                         f"{case['id']}: invalid source offsets for {match.value!r}",
                     )
-        for match in [*result.academic_degrees, *result.experience]:
+        for match in [
+            *result.academic_degrees,
+            *result.experience,
+            *result.experience_sections,
+        ]:
             self.assertEqual(
                 case["text"][match.start : match.end],
                 match.value,

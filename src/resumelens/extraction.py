@@ -12,6 +12,9 @@ from .patterns import (
     ACADEMIC_DEGREE_PATTERN,
     EMAIL_PATTERN,
     EXPERIENCE_PATTERNS,
+    EXPERIENCE_SECTION_HEADER_PATTERN,
+    OTHER_SECTION_HEADER_PATTERN,
+    OTHER_QUALIFICATION_PATTERNS,
     PHONE_PATTERN,
     SKILL_PATTERNS,
     URL_PATTERN,
@@ -36,8 +39,10 @@ class ExtractionResult:
 
     contacts: dict[str, list[ExtractionMatch]]
     skills: dict[str, list[ExtractionMatch]]
+    other_qualifications: dict[str, list[ExtractionMatch]]
     academic_degrees: list[ExtractionMatch]
     experience: list[ExtractionMatch]
+    experience_sections: list[ExtractionMatch]
 
     def to_dict(self) -> dict[str, Any]:
         """Return a JSON-serializable representation of all matches."""
@@ -50,8 +55,15 @@ class ExtractionResult:
                 category: [match.to_dict() for match in matches]
                 for category, matches in self.skills.items()
             },
+            "other_qualifications": {
+                category: [match.to_dict() for match in matches]
+                for category, matches in self.other_qualifications.items()
+            },
             "academic_degrees": [match.to_dict() for match in self.academic_degrees],
             "experience": [match.to_dict() for match in self.experience],
+            "experience_sections": [
+                match.to_dict() for match in self.experience_sections
+            ],
         }
 
     def to_json(self, *, indent: int = 2) -> str:
@@ -94,6 +106,26 @@ def _extract_urls(text: str) -> dict[str, list[ExtractionMatch]]:
     return categories
 
 
+def _extract_experience_sections(text: str) -> list[ExtractionMatch]:
+    """Capture literal content under common experience headings."""
+    sections = []
+    for header in re.finditer(EXPERIENCE_SECTION_HEADER_PATTERN, text):
+        body_start = header.end()
+        next_heading = re.search(OTHER_SECTION_HEADER_PATTERN, text[body_start:])
+        body_end = (
+            body_start + next_heading.start() if next_heading else len(text)
+        )
+        raw_body = text[body_start:body_end]
+        value = raw_body.strip()
+        if not value:
+            continue
+
+        leading_whitespace = len(raw_body) - len(raw_body.lstrip())
+        start = body_start + leading_whitespace
+        sections.append(ExtractionMatch(value=value, start=start, end=start + len(value)))
+    return sections
+
+
 def extract_resume(text: str) -> ExtractionResult:
     """Extract contacts, qualifications, education, and experience from text.
 
@@ -117,6 +149,10 @@ def extract_resume(text: str) -> ExtractionResult:
         definition.category: _matches(definition.pattern, text)
         for definition in SKILL_PATTERNS
     }
+    other_qualifications = {
+        definition.category: _matches(definition.pattern, text)
+        for definition in OTHER_QUALIFICATION_PATTERNS
+    }
 
     degree_matches = _matches(ACADEMIC_DEGREE_PATTERN, text)
     experience_matches = [
@@ -129,6 +165,8 @@ def extract_resume(text: str) -> ExtractionResult:
     return ExtractionResult(
         contacts=contacts,
         skills=skills,
+        other_qualifications=other_qualifications,
         academic_degrees=degree_matches,
         experience=experience_matches,
+        experience_sections=_extract_experience_sections(text),
     )

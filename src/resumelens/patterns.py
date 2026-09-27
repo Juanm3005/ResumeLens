@@ -41,6 +41,25 @@ SKILL_PATTERNS = (
     ),
 )
 
+# Explicit non-technology phrases from the supported reference profiles.
+OTHER_QUALIFICATION_PATTERNS = (
+    PatternDefinition(
+        "software_development",
+        r"(?<!\w)(?:web\s+applications?|backend\s+services?)(?!\w)",
+        "Web application and backend service experience mentioned in prose.",
+    ),
+    PatternDefinition(
+        "machine_learning",
+        r"(?<!\w)(?:machine[- ]learning\s+model\s+development|predictive\s+models?)(?!\w)",
+        "Machine-learning model development and predictive model experience.",
+    ),
+    PatternDefinition(
+        "data_processing",
+        r"(?<!\w)data[- ]processing\s+pipelines?(?!\w)",
+        "Data-processing pipeline experience mentioned in prose.",
+    ),
+)
+
 EMAIL_PATTERN = (
     r"(?<![\w.+-])[\w.!#$%&'*+/=?^_{}|~-]+@"
     r"[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?"
@@ -72,4 +91,17 @@ EXPERIENCE_PATTERNS = (
     r"(?:of\s+)?(?:professional\s+)?experience(?!\w)",
     r"(?<!\w)experience\s*(?:of|:)?\s*\d+(?:\.\d+)?\s*\+?\s*"
     r"(?:years?|yrs?)(?!\w)",
+)
+
+# Extract the raw content under a conventional work-experience heading until
+# the next common résumé section. This supplements duration-only matches.
+EXPERIENCE_SECTION_HEADER_PATTERN = (
+    r"(?im)^[ \t]*(?:(?:professional|work)[ \t]+)?experience"
+    r"(?:[ \t]+history)?[ \t]*:?[ \t]*(?:\r?\n|$)"
+)
+OTHER_SECTION_HEADER_PATTERN = (
+    r"(?im)^[ \t]*(?:education|academic(?:[ \t]+background)?|"
+    r"technical[ \t]+skills|skills|projects?|certifications?|"
+    r"contact(?:[ \t]+information)?|summary|profile|languages?|"
+    r"publications?|awards?|references?|training)[ \t]*:?[ \t]*(?:\r?\n|$)"
 )
