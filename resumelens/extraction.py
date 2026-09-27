@@ -82,11 +82,12 @@ def _extract_urls(text: str) -> dict[str, list[ExtractionMatch]]:
         if not value:
             continue
 
-        host = urlparse(value if "://" in value else f"https://{value}").netloc.lower()
+        host = urlparse(value if "://" in value else f"https://{value}").hostname or ""
+        host = host.lower()
         item = ExtractionMatch(value=value, start=match.start(), end=end)
-        if "linkedin.com" in host:
+        if host == "linkedin.com" or host.endswith(".linkedin.com"):
             categories["linkedin"].append(item)
-        elif "github.com" in host:
+        elif host == "github.com" or host.endswith(".github.com"):
             categories["github"].append(item)
         else:
             categories["websites"].append(item)
