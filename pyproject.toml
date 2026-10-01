@@ -20,3 +20,7 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[project.optional-dependencies]
+stage2-preview = ["pyformlang>=1.0,<2"]
+formal = ["pyformlang>=1.0,<2", "textx>=4.0"]
