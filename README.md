@@ -171,7 +171,7 @@ python -m pip install -e ".[stage2-preview]"
 python -m unittest discover -s tests -p "test_normalization_preview.py" -v
 ```
 
-La demostración solo transforma `JS`, `Javascript` y `JavaScript` en `JAVASCRIPT`. Su modelo y alcance están descritos en [docs/stage-2-normalization-preview.md](docs/stage-2-normalization-preview.md). La API de `pyformlang` y la documentación del proyecto se mantienen como referencias para completar después el punto 2.
+La demostración solo transforma `JS`, `Javascript` y `JavaScript` en `JAVASCRIPT`. Su modelo y alcance están descritos en [docs/stage-2-normalization-preview.md](docs/stage-2-normalization). La API de `pyformlang` y la documentación del proyecto se mantienen como referencias para completar después el punto 2.
 
 ## Estructura del repositorio
 
