@@ -1,6 +1,6 @@
 # Punto 2 — Normalización con transductores finitos
 
-Esta etapa convierte las menciones literales del punto 1 (`JS`, `React.js`, `scikit learn`, `Machine-learning model development`…) en **tokens canónicos** (`JAVASCRIPT`, `REACT`, `SCIKIT_LEARN`, `ML_MODEL_DEVELOPMENT`…). Sustituye a la vista previa `stage-2-normalization-preview.md`, que modelaba cada alias como un único símbolo; aquí la unidad de entrada es el **carácter**.
+Esta etapa convierte las menciones literales del punto 1 (`JS`, `React.js`, `scikit learn`, `Machine-learning model development`…) en tokens canónicos (`JAVASCRIPT`, `REACT`, `SCIKIT_LEARN`, `ML_MODEL_DEVELOPMENT`…). `
 
 ## Alcance
 
@@ -46,7 +46,7 @@ Ejemplo: `Scikit-learn⊣` → `SCIKITLEARN⊣`; `Spring \n Boot⊣` → `SPRING
 
 ## T2 — Transductor de alias a token canónico
 
-Se construye como un *trie* sobre las claves limpias (alias del catálogo pasados por T1). Con el catálogo actual tiene **359 estados y 419 transiciones**, demasiado para dibujar completo; la definición es genérica y los diagramas se muestran por familia.
+Se construye como un *trie* sobre las claves limpias (alias del catálogo pasados por T1). Con el catálogo actual tiene 359 estados y 419 transiciones.
 
 ```text
 M2 = (Q, Σ, Γ, δ, ω, q0, F)
@@ -86,7 +86,7 @@ flowchart LR
 
 ## Orden canónico por perfil
 
-`profiles.py` define para cada perfil una lista de grupos ordenados; los tokens se ordenan por (grupo, posición en el grupo). Los tokens que el perfil no contempla se devuelven aparte en `outside_profile` y no se envían al autómata. Así `Git, NodeJS, JS, Postgres, React.js` produce `JAVASCRIPT, REACT, NODE_JS, POSTGRESQL, GIT`, igual que en la consigna.
+`profiles.py` define para cada perfil una lista de grupos ordenados; los tokens se ordenan por (grupo, posición en el grupo). Los tokens que el perfil no contempla se devuelven aparte en `outside_profile` y no se envían al autómata. Así `Git, NodeJS, JS, Postgres, React.js` produce `JAVASCRIPT, REACT, NODE_JS, POSTGRESQL, GIT`.
 
 | Perfil | Orden de grupos |
 | --- | --- |
@@ -103,7 +103,7 @@ python -m resumelens .\resume.txt --normalize --profile full_stack
 python -m unittest discover -s tests -v
 ```
 
-`tests/test_normalization.py` cubre: los ejemplos de la consigna, todos los alias del catálogo, mayúsculas y espacios, prefijos, `C++`/`C#`, rechazo de valores desconocidos, equivalencia de T1 con la limpieza en Python puro, deduplicación, independencia del orden de entrada y que **todo valor del dataset de la etapa 1 se normalice**.
+`tests/test_normalization.py` cubre los ejemplos, todos los alias del catálogo, mayúsculas y espacios, prefijos, `C++`/`C#`, rechazo de valores desconocidos, equivalencia de T1 con la limpieza en Python puro, deduplicación, independencia del orden de entrada y que todo valor del dataset de la etapa 1 se normalice.
 
 ## Limitaciones
 
