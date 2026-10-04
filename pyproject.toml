@@ -4,13 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "resumelens"
-version = "0.1.0"
-description = "Regex-based résumé information extraction for ResumeLens stage 1"
+version = "0.2.0"
+description = "Formal-language résumé screening: regex extraction, FST normalization, automata classification, textX DSL"
 requires-python = ">=3.10"
-dependencies = []
-
-[project.optional-dependencies]
-stage2-preview = ["pyformlang>=1.0,<2"]
+dependencies = ["pyformlang>=1.0,<2"]
 
 [project.scripts]
 resumelens = "resumelens.cli:main"
