@@ -29,7 +29,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument(
         "--profile",
-        choices=("full_stack", "ml_engineer"),
+        choices=("full_stack", "ml_engineer", "devops", "data_engineer"),
         help="with --normalize, sort tokens in the canonical order of this profile",
     )
     args = parser.parse_args(argv)

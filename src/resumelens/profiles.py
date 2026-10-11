@@ -52,9 +52,24 @@ ML_ENGINEER = ProfileSpec(
     ),
 )
 
+DEVOPS = ProfileSpec(
+    "DEVOPS_ENGINEER",
+    (
+        ("operating_system", ("LINUX",)),
+        ("scripting", ("PYTHON",)),
+        ("containers", ("DOCKER",)),
+        ("orchestration", ("KUBERNETES",)),
+        ("cloud", ("AWS", "AZURE", "GCP")),
+        ("version_control", ("GIT",)),
+    ),
+)
+
+
 PROFILES: dict[str, ProfileSpec] = {
     "full_stack": FULL_STACK,
     "ml_engineer": ML_ENGINEER,
+    "devops": DEVOPS,
+
 }
 
 
