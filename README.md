@@ -26,20 +26,20 @@ The complete project is organized into these stages:
 | 1. Extraction | Regular expressions with Python's `re` | Detect contact data, qualifications, education, and experience, keeping the original mentions. | Implemented and tested. |
 | 2. Normalization | Finite-state transducers with `pyformlang` | Convert explicit qualification variants into canonical names. | Implemented and tested: two transducers (cleaning and alias → token) over a catalog of 46 tokens. |
 | 3. Profile recognition | Finite automata with `pyformlang` | Check whether the ordered set of qualifications satisfies a profile pattern. | Implemented: one DFA for each of the four profiles. |
-| 4. Structuring | Context-free grammar and `textX` | Validate a DSL representation of the information and the profile result. | Pending. |
-| 5. Visualization | HTML or Markdown | Present the validated structured information. | Pending. |
+| 4. Structuring | Context-free grammar and `textX` | Validate a DSL representation of the information and the profile result. | Implemented and tested: EBNF grammar in `textX`, semantic checks, generator from stages 1–3. |
+| 5. Visualization | HTML | Present the validated structured information. | Implemented and tested: standalone HTML page rendered from the validated model. |
 
-The output of each stage feeds the next one. The pipeline implemented today is **UTF-8 text → extraction (literal mentions) → normalization (canonical tokens ordered by profile) → recognition (ACCEPTED / REJECTED per profile)**.
+The output of each stage feeds the next one. The pipeline implemented today is **UTF-8 text → extraction (literal mentions) → normalization (canonical tokens ordered by profile) → recognition (ACCEPTED / REJECTED per profile) → structuring (validated candidate-profile DSL listing every accepted profile) → visualization (HTML page)**.
 
 ## Status and scope of this delivery
 
-**Stages 1, 2, and 3** are implemented:
+**All five stages** are implemented:
 
 - **Stage 1:** extraction with regular expressions, with a Python API, a command-line interface, pattern documentation, and a regression dataset.
 - **Stage 2:** normalization with two `pyformlang` finite-state transducers generated from a single alias catalog, plus canonical ordering per profile.
 - **Stage 3:** one deterministic finite automaton per profile (Full Stack, Machine Learning, DevOps, and Data Engineer).
-
-Stages 4 (grammar and `textX`) and 5 (visualization) are pending.
+- **Stage 4:** a candidate-profile DSL defined with a context-free grammar in `textX`, with lexical, syntactic, and semantic validation.
+- **Stage 5:** an HTML visualization of the validated profile, based on the sample page of the assignment.
 
 Each stage respects its boundary. Extraction keeps the text literally as written: `JS` is still `JS` in stage 1. The alias becomes `JAVASCRIPT` in stage 2, and only stage 3 decides whether the set of tokens satisfies a profile.
 
@@ -197,6 +197,53 @@ Each module also provides `recognize_<profile>_text(text)`, which runs extractio
 - The verdict depends on explicit mentions and does not evaluate experience or proficiency.
 - There are no automated tests specific to this stage yet, and no command-line option for recognition.
 
+## Stage 4: candidate profile language
+
+### Goal and inputs
+
+Stage 4 represents the results of stages 1–3 in a domain-specific language: personal information, contact data, education, experience, normalized skills, and **one `accepted` block for every profile whose automaton accepted the résumé** (or `none`). The grammar is in [`src/resumelens/structuring/candidate_profile.tx`](src/resumelens/structuring/candidate_profile.tx); the EBNF, the terminals and non-terminals, the structural characteristics, and the validation rules are in [docs/stage-4-structuring.md](docs/stage-4-structuring.md).
+
+### Example
+
+```text
+candidate {
+    personal { name: "Wednesday Addams"; }
+    experience {
+        total: 3 years;
+        job { activity: "3 years of experience developing web applications."; }
+    }
+    skills {
+        languages: JAVASCRIPT;
+        frameworks: REACT, NODE_JS;
+        databases: POSTGRESQL;
+        tools: GIT;
+        qualifications: WEB_APPLICATIONS;
+    }
+    classification {
+        accepted FULL_STACK_DEVELOPER {
+            sequence: JAVASCRIPT, REACT, NODE_JS, POSTGRESQL, GIT;
+        }
+    }
+}
+```
+
+[`examples/wednesday_addams.rlp`](examples/wednesday_addams.rlp) is a complete example accepted by two profiles (Full Stack Developer and Data Engineer).
+
+### Validation
+
+Documents are rejected when they break a lexical rule (lower-case token, malformed email or URL, unquoted free text), a syntactic rule (missing `;` or braces, sections out of order, empty blocks, unknown profile), or a semantic rule checked after parsing: tokens must be in the stage 2 catalog, nothing may be declared twice, and each accepted `sequence` must use declared skills and be accepted, in canonical order, by the profile's stage 3 DFA.
+
+### Stage 4 limitations
+
+- The candidate's name is taken from the first line of the résumé when it looks like a name.
+- Each experience section becomes a single job; `role`, `location`, `title`, `organization`, and institutions are part of the language but are not extracted yet.
+
+## Stage 5: HTML visualization
+
+The renderer in [`src/resumelens/visualization/`](src/resumelens/visualization/) turns a **validated** stage 4 model into a standalone HTML page with the layout and styles of the assignment's sample ([`outputVisualization.html`](outputVisualization.html)): header with the name, personal information and contact links, summary, education, experience, normalized skills by category, and one evaluation block for each accepted profile. Empty sections are omitted and every value is HTML-escaped. Details are in [docs/stage-5-visualization.md](docs/stage-5-visualization.md).
+
+[`examples/wednesday_addams.html`](examples/wednesday_addams.html) shows a résumé accepted by two profiles; [`examples/wednesday_addams_full.html`](examples/wednesday_addams_full.html) is rendered from a hand-written DSL with the data of the sample page.
+
 ## Installation and usage
 
 A virtual environment is recommended to isolate this project's dependencies. Python 3.10 or later is required.
@@ -208,6 +255,47 @@ python -m pip install -e .
 ```
 
 On macOS or Linux, the activation command is `source .venv/bin/activate`; the other commands are the same. If the PowerShell execution policy prevents activating the environment, use `.\.venv\Scripts\python.exe` directly instead of `python` in the commands.
+
+### Run the whole pipeline at once
+
+[`run_pipeline.py`](run_pipeline.py) takes a résumé text file and runs the five stages in a row: extraction, normalization, profile recognition, structuring, and visualization. With the environment active, from the project root:
+
+```powershell
+python run_pipeline.py .\examples\enid_sinclair.txt
+```
+
+Add `--open` to open the HTML page in the browser when it finishes, and `--out <folder>` to use a base folder other than `visualizations/`:
+
+```powershell
+python run_pipeline.py .\examples\enid_sinclair.txt --open
+```
+
+Every stage result is saved in `visualizations/<résumé name>/` (the folder is created if needed and ignored by git):
+
+| File | Stage | Content |
+|---|---|---|
+| `1_extraction.json` | 1. Extraction | Contacts, skills, degrees, and experience found by the regular expressions |
+| `2_normalization.json` | 2. Normalization | Skills converted to canonical tokens by the transducers |
+| `3_recognition.json` | 3. Recognition | `ACCEPTED`/`REJECTED` verdict and path of each profile automaton |
+| `4_profile.rlp` | 4. Structuring | Candidate-profile DSL, validated with textX |
+| `5_visualization.html` | 5. Visualization | HTML page rendered from the validated model |
+
+The console also prints a summary of each stage:
+
+```text
+[1] Extraction     -> visualizations\enid_sinclair\1_extraction.json
+[2] Normalization  -> ['DOCKER', 'KUBERNETES', 'AWS', 'PYTHON', 'SCIKIT_LEARN', ...]
+[3] FULL_STACK_DEVELOPER         REJECTED
+[3] MACHINE_LEARNING_ENGINEER    REJECTED
+[3] DEVOPS_ENGINEER              ACCEPTED
+[3] DATA_ENGINEER                ACCEPTED
+[4] Structuring    -> visualizations\enid_sinclair\4_profile.rlp (valid)
+[5] Visualization  -> visualizations\enid_sinclair\5_visualization.html
+```
+
+To try another candidate, write a `.txt` with the same layout as [`examples/enid_sinclair.txt`](examples/enid_sinclair.txt): the name on the first line, then `Email:`, `Phone:`, links, the years of experience, and the `Education:`, `Experience:`, and `Technical Skills:` sections. If the generated profile fails validation, stage 4 prints the textX error and no HTML page is written.
+
+### Command-line options by stage
 
 With the environment active, save the résumé text as `resume.txt` and run:
 
@@ -228,7 +316,23 @@ python -m resumelens .\resume.txt --normalize
 python -m resumelens .\resume.txt --normalize --profile ml_engineer
 ```
 
-The Python API covers the three stages:
+To generate the stage 4 candidate-profile DSL and to validate an existing DSL document:
+
+```powershell
+python -m resumelens .\resume.txt --dsl -o .\profile.rlp
+python -m resumelens .\profile.rlp --validate
+```
+
+To generate the stage 5 HTML page, from a résumé or from a validated DSL document:
+
+```powershell
+python -m resumelens .\resume.txt --html
+python -m resumelens .\profile.rlp --validate --html
+```
+
+The page is written to `visualizations/<input name>.html` (the folder is created if needed and ignored by git); use `--html-dir` to choose another folder or `-o` for an exact file.
+
+The Python API covers the five stages:
 
 ```python
 from resumelens import extract_resume
@@ -239,6 +343,14 @@ text = "Skills: JS, React.js, NodeJS, Postgres, Git."
 print(extract_resume(text).to_json())              # stage 1
 print(normalize_text(text, "full_stack").to_dict())  # stage 2
 print(recognize_full_stack_text(text).verdict)     # stage 3: ACCEPTED
+
+from resumelens.structuring import build_candidate_profile, parse_candidate_profile
+source = build_candidate_profile(text)             # stage 4: DSL text
+model = parse_candidate_profile(source)            # validated textX model
+print([a.profile for a in model.classification.accepted])
+
+from resumelens.visualization import render_html
+html_page = render_html(model)                     # stage 5: HTML text
 ```
 
 ## Tests and verification
@@ -249,11 +361,12 @@ With `.venv` active, run the full suite:
 python -m unittest discover -s tests -v
 ```
 
-The dataset [`tests/fixtures/stage1_extraction_dataset.json`](tests/fixtures/stage1_extraction_dataset.json) contains **94 regression cases** with unique IDs. For stage 1, the suite covers the Full Stack and Machine Learning examples from the assignment, categories and variants, boundaries that prevent partial matches, contact data, Unicode offsets, JSON serialization, and console and file output. For stage 2, [`tests/test_normalization.py`](tests/test_normalization.py) covers every catalog alias, case and separators, prefixes, `C++`/`C#`, rejection of unknown values, deduplication, profile ordering, and that every value in the stage 1 dataset is normalized. In total, 121 tests run. Stage 3 does not have its own automated tests yet.
+The dataset [`tests/fixtures/stage1_extraction_dataset.json`](tests/fixtures/stage1_extraction_dataset.json) contains **94 regression cases** with unique IDs. For stage 1, the suite covers the Full Stack and Machine Learning examples from the assignment, categories and variants, boundaries that prevent partial matches, contact data, Unicode offsets, JSON serialization, and console and file output. For stage 2, [`tests/test_normalization.py`](tests/test_normalization.py) covers every catalog alias, case and separators, prefixes, `C++`/`C#`, rejection of unknown values, deduplication, profile ordering, and that every value in the stage 1 dataset is normalized. For stage 4, [`tests/test_structuring.py`](tests/test_structuring.py) covers valid documents, each lexical, syntactic, and semantic rejection rule, the generator on the assignment examples and on a résumé accepted by two profiles, and the `--dsl`/`--validate` options. For stage 5, [`tests/test_visualization.py`](tests/test_visualization.py) covers every section of the page, several accepted profiles, empty sections, escaping, and the `--html` option. In total, 148 tests run. Stage 3 does not have its own automated tests yet.
 
 ## Dependencies
 
 - `pyformlang` (`>=1.0,<2`): required dependency declared in `pyproject.toml`; used for the stage 2 transducers and the stage 3 automata. It is installed with `python -m pip install -e .`.
+- `textX` (`>=4,<5`): required dependency; parses and validates the stage 4 grammar.
 - `setuptools`: the package build backend.
 - Stage 1 only uses the standard library (`re`).
 
@@ -263,7 +376,7 @@ The dataset [`tests/fixtures/stage1_extraction_dataset.json`](tests/fixtures/sta
 src/resumelens/
   __init__.py                  Public API (extraction)
   __main__.py                  Entry point for python -m resumelens
-  cli.py                       Text input and JSON output (--normalize, --profile)
+  cli.py                       Text input and JSON/DSL output (--normalize, --profile, --dsl, --validate, --html, --html-dir)
   profiles.py                  Groups and canonical order of the four profiles
   normalization_preview.py     Initial stage 2 demo (JavaScript aliases only)
   extraction/                  Stage 1
@@ -278,7 +391,23 @@ src/resumelens/
     ml_engineer.py             Machine Learning Engineer DFA
     devops.py                  DevOps Engineer DFA
     data_engineer.py           Data Engineer DFA
-  structuring/                 Stage 4 (pending)
+    __init__.py                recognize_all(): the four DFAs over the same tokens
+  structuring/                 Stage 4
+    candidate_profile.tx       textX grammar of the candidate-profile DSL
+    dsl.py                     Metamodel, semantic checks, parse functions
+    builder.py                 Stages 1-3 results -> DSL text
+  visualization/               Stage 5
+    template.html              Page skeleton and CSS (from outputVisualization.html)
+    html.py                    Validated model -> HTML page
+examples/
+  enid_sinclair.txt            Sample résumé accepted as DevOps and Data Engineer
+  wednesday_addams.txt         Sample résumé
+  wednesday_addams.rlp         DSL generated from it
+  wednesday_addams.html        HTML rendered from it
+  wednesday_addams_full.rlp    Hand-written DSL with the sample page's data
+  wednesday_addams_full.html   HTML rendered from it
+outputVisualization.html       Sample page provided with the assignment
+run_pipeline.py                Runs stages 1-5 on a résumé and saves each result
 pyproject.toml                 Installation configuration
 tests/
   test_cli.py
@@ -286,16 +415,13 @@ tests/
   test_normalization.py
   test_normalization_preview.py
   test_stage1_dataset.py
+  test_structuring.py
+  test_visualization.py
   fixtures/stage1_extraction_dataset.json
 docs/
   stage-1-extraction.md
   stage-2-normalization.md
   stage-3-recognition.md
+  stage-4-structuring.md
+  stage-5-visualization.md
 ```
-
-## Next steps for the team
-
-1. Add automated tests for the four stage 3 automata and a command-line option that runs recognition.
-2. Fix the double `SQL Server` mention in stage 1 and extend the catalog with tools for the team's profiles (for example Jenkins, Terraform, Spark, or Airflow).
-3. Design the EBNF grammar for the structured profile, implement it with `textX`, and test that it accepts valid inputs and rejects invalid ones.
-4. Generate the Markdown or HTML visualization from the validated structured profile.
