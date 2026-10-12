@@ -1,4 +1,4 @@
-"""Command-line interface for ResumeLens (stages 1, 2 and 4)."""
+"""Command-line interface for ResumeLens (stages 1, 2, 4 and 5)."""
 
 from __future__ import annotations
 
@@ -46,28 +46,42 @@ def main(argv: Sequence[str] | None = None) -> int:
         action="store_true",
         help="treat the input as a candidate-profile DSL file and validate it",
     )
+    parser.add_argument(
+        "--html",
+        action="store_true",
+        help="print the stage-5 HTML visualization (of the résumé, or of the "
+        "DSL file when combined with --validate)",
+    )
     args = parser.parse_args(argv)
     if args.profile and not args.normalize:
         parser.error("--profile requires --normalize")
     if sum((args.normalize, args.dsl, args.validate)) > 1:
         parser.error("--normalize, --dsl and --validate are mutually exclusive")
+    if args.html and (args.normalize or args.dsl):
+        parser.error("--html can only be combined with --validate")
 
     try:
         text = args.resume.read_text(encoding="utf-8")
     except OSError as error:
         parser.error(f"could not read {args.resume}: {error}")
 
-    if args.validate or args.dsl:
+    if args.validate or args.dsl or args.html:
         # Imported lazily so stages 1-2 keep working without textX.
         from textx.exceptions import TextXError
 
         from .structuring.builder import build_candidate_profile
         from .structuring.dsl import parse_candidate_profile_file
+        from .visualization import render_html, render_html_from_resume
 
         try:
             if args.validate:
-                parse_candidate_profile_file(args.resume)
-                result = f"{args.resume}: valid candidate profile\n"
+                model = parse_candidate_profile_file(args.resume)
+                result = (
+                    render_html(model) if args.html
+                    else f"{args.resume}: valid candidate profile\n"
+                )
+            elif args.html:
+                result = render_html_from_resume(text)
             else:
                 result = build_candidate_profile(text)
         except TextXError as error:
