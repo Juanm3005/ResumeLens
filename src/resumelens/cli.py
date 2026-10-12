@@ -49,8 +49,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "--html",
         action="store_true",
-        help="print the stage-5 HTML visualization (of the résumé, or of the "
-        "DSL file when combined with --validate)",
+        help="write the stage-5 HTML visualization (of the résumé, or of the "
+        "DSL file when combined with --validate) to --html-dir, or to --output",
+    )
+    parser.add_argument(
+        "--html-dir",
+        type=Path,
+        default=Path("visualizations"),
+        help="folder for the generated HTML pages when --output is not given "
+        "(default: %(default)s)",
     )
     args = parser.parse_args(argv)
     if args.profile and not args.normalize:
@@ -96,11 +103,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     else:
         result = extract_resume(text).to_json() + "\n"
 
-    if args.output is None:
+    output = args.output
+    if output is None and args.html:
+        output = args.html_dir / f"{args.resume.stem}.html"
+
+    if output is None:
         sys.stdout.write(result)
     else:
         try:
-            args.output.write_text(result, encoding="utf-8")
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_text(result, encoding="utf-8")
         except OSError as error:
-            parser.error(f"could not write {args.output}: {error}")
+            parser.error(f"could not write {output}: {error}")
+        if args.html:
+            sys.stdout.write(f"{output}\n")
     return 0

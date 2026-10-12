@@ -144,17 +144,28 @@ class HtmlCommandLineTests(unittest.TestCase):
             self.assertEqual(code, 0)
             self.assertIn("Full Stack Developer", page.read_text(encoding="utf-8"))
 
-        code, out, _ = self.run_cli(
-            str(EXAMPLES / "wednesday_addams.rlp"), "--validate", "--html"
-        )
-        self.assertEqual(code, 0)
-        self.assertTrue(out.startswith("<!DOCTYPE html>"))
+    def test_html_is_written_to_the_html_folder(self):
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory, "pages")
+            code, out, _ = self.run_cli(
+                str(EXAMPLES / "wednesday_addams.rlp"), "--validate", "--html",
+                "--html-dir", str(folder),
+            )
+            page = folder / "wednesday_addams.html"
+            self.assertEqual(code, 0)
+            self.assertEqual(out.strip(), str(page))
+            self.assertTrue(
+                page.read_text(encoding="utf-8").startswith("<!DOCTYPE html>")
+            )
 
     def test_html_rejects_invalid_dsl(self):
         with tempfile.TemporaryDirectory() as directory:
             profile = Path(directory, "bad.rlp")
             profile.write_text("candidate { }", encoding="utf-8")
-            code, out, err = self.run_cli(str(profile), "--validate", "--html")
+            code, out, err = self.run_cli(
+                str(profile), "--validate", "--html", "--html-dir", directory
+            )
+            self.assertEqual(list(Path(directory).glob("*.html")), [])
         self.assertEqual(code, 1)
         self.assertEqual(out, "")
         self.assertIn("invalid candidate profile", err)

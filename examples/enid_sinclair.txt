@@ -1,0 +1,19 @@
+Enid Sinclair
+Email: enid.sinclair@example.com
+Phone: +57 311 987 6543
+LinkedIn: https://www.linkedin.com/in/enid-sinclair
+GitHub: https://github.com/enid-sinclair
+5 years of experience building cloud infrastructure and machine learning models.
+
+Education:
+Master of Science in Data Science
+Bachelor of Engineering in Systems Engineering
+
+Experience:
+- Deployed machine learning models to production with Docker and Kubernetes.
+- Automated CI/CD pipelines with Jenkins and GitHub Actions on AWS.
+- Trained classification models in Python using scikit-learn, TensorFlow and PyTorch.
+- Designed ETL pipelines with Apache Spark and Airflow over PostgreSQL.
+
+Technical Skills:
+Python, TensorFlow, PyTorch, Scikit-Learn, Docker, K8s, Terraform, AWS, Linux, Spark, Airflow, SQL, Postgres, Git.
