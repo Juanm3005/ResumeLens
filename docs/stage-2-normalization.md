@@ -1,33 +1,33 @@
-# Punto 2 — Normalización con transductores finitos
+# Stage 2 — Normalization with finite-state transducers
 
-Esta etapa convierte las menciones literales del punto 1 (`JS`, `React.js`, `scikit learn`, `Machine-learning model development`…) en tokens canónicos (`JAVASCRIPT`, `REACT`, `SCIKIT_LEARN`, `ML_MODEL_DEVELOPMENT`…). `
+This stage converts the literal mentions from stage 1 (`JS`, `React.js`, `scikit learn`, `Machine-learning model development`…) into canonical tokens (`JAVASCRIPT`, `REACT`, `SCIKIT_LEARN`, `ML_MODEL_DEVELOPMENT`…).
 
-## Alcance
+## Scope
 
-- **Entrada:** el `value` de cada coincidencia de `skills` y `other_qualifications` (46 tokens posibles; ver `normalization/catalog.py`). Contactos, grados y años de experiencia no tienen equivalencias que normalizar y quedan fuera.
-- **Salida:** tokens canónicos sin duplicados, valores no reconocidos y, si se indica un perfil, los tokens en el orden canónico del perfil.
-- **Cadena:** `valor → T1 (limpieza) → T2 (alias → token) → deduplicar → ordenar por perfil`. Solo T1 y T2 son transductores; deduplicar y ordenar son lógica de aplicación (`pipeline.py`, `profiles.py`).
+- **Input:** the `value` of each match in `skills` and `other_qualifications` (46 possible tokens; see `normalization/catalog.py`). Contact data, degrees, and years of experience have no equivalences to normalize and are left out.
+- **Output:** canonical tokens without duplicates, unrecognized values and, if a profile is given, the tokens in the profile's canonical order.
+- **Pipeline:** `value → T1 (cleaning) → T2 (alias → token) → deduplicate → sort by profile`. Only T1 and T2 are transducers; deduplicating and sorting are application logic (`pipeline.py`, `profiles.py`).
 
-## Decisiones de diseño
+## Design decisions
 
-1. **Tokenización por carácter.** Los estados de T2 representan prefijos ya leídos, no un diccionario disfrazado.
-2. **Marcador de fin `⊣`.** Varios alias son prefijo de otros (`Java`/`JavaScript`, `SQL`/`SQLite`/`SQL Server`, `React`/`ReactJS`). Se añade `⊣` a Σ y la salida se emite solo al consumirlo; así la traducción depende de la cadena completa y no de un prefijo.
-3. **Dos transductores.** T1 absorbe las variaciones de mayúsculas, espacios y separadores (`React.js`, `ReactJS` y `react js` convergen en `REACTJS`), lo que mantiene T2 pequeño.
-4. **Rechazo explícito.** Una cadena fuera del modelo no tiene traducción: el valor va a `unrecognized` y no llega a la etapa 3.
-5. **Catálogo como única fuente de verdad.** T2 se genera desde `CATALOG`; un alias ambiguo lanza `ValueError` al construirlo.
-6. **δ y ω en pyformlang.** La librería guarda la salida en la transición, de modo que δ y ω se implementan como una sola función `Q × Σ → Q × Γ*`. En la 7-tupla, ω es su proyección sobre la salida.
+1. **Character-level tokenization.** The states of T2 represent prefixes already read, not a disguised dictionary.
+2. **End marker `⊣`.** Several aliases are prefixes of others (`Java`/`JavaScript`, `SQL`/`SQLite`/`SQL Server`, `React`/`ReactJS`). `⊣` is added to Σ and the output is emitted only when it is consumed; this way the translation depends on the whole string and not on a prefix.
+3. **Two transducers.** T1 absorbs variations in case, spaces, and separators (`React.js`, `ReactJS`, and `react js` converge on `REACTJS`), which keeps T2 small.
+4. **Explicit rejection.** A string outside the model has no translation: the value goes to `unrecognized` and does not reach stage 3.
+5. **Catalog as the single source of truth.** T2 is generated from `CATALOG`; an ambiguous alias raises `ValueError` when it is built.
+6. **δ and ω in pyformlang.** The library stores the output on the transition, so δ and ω are implemented as a single function `Q × Σ → Q × Γ*`. In the 7-tuple, ω is its projection onto the output.
 
-## T1 — Transductor de limpieza
+## T1 — Cleaning transducer
 
 ```text
 M1 = (Q, Σ, Γ, δ, ω, q0, F)
 Q  = {q0, qf}
 Σ  = {A..Z, a..z, +, #, ' ', \t, \r, \n, '-', '.', '_', ⊣}
 Γ  = {A..Z, +, #, ⊣}
-δ  = {(q0, x, q0) | x ∈ letras ∪ {+, #} ∪ separadores} ∪ {(q0, ⊣, qf)}
-ω  = {(q0, a, q0) ↦ A | a ∈ {a, A}, para cada letra}      # a mayúscula
-   ∪ {(q0, x, q0) ↦ x | x ∈ {+, #}}                        # se conservan
-   ∪ {(q0, s, q0) ↦ ε | s ∈ separadores}                   # se eliminan
+δ  = {(q0, x, q0) | x ∈ letters ∪ {+, #} ∪ separators} ∪ {(q0, ⊣, qf)}
+ω  = {(q0, a, q0) ↦ A | a ∈ {a, A}, for each letter}       # to uppercase
+   ∪ {(q0, x, q0) ↦ x | x ∈ {+, #}}                        # kept
+   ∪ {(q0, s, q0) ↦ ε | s ∈ separators}                    # removed
    ∪ {(q0, ⊣, qf) ↦ ⊣}
 q0 = q0
 F  = {qf}
@@ -36,32 +36,32 @@ F  = {qf}
 ```mermaid
 flowchart LR
     start(( )) --> q0((q0))
-    q0 -- "a, A / A  (cada letra)" --> q0
+    q0 -- "a, A / A  (each letter)" --> q0
     q0 -- "+ / +   # / #" --> q0
-    q0 -- "espacio, tab, salto, - . _ / ε" --> q0
+    q0 -- "space, tab, newline, - . _ / ε" --> q0
     q0 -- "⊣ / ⊣" --> qf(((qf)))
 ```
 
-Ejemplo: `Scikit-learn⊣` → `SCIKITLEARN⊣`; `Spring \n Boot⊣` → `SPRINGBOOT⊣`.
+Example: `Scikit-learn⊣` → `SCIKITLEARN⊣`; `Spring \n Boot⊣` → `SPRINGBOOT⊣`.
 
-## T2 — Transductor de alias a token canónico
+## T2 — Alias-to-canonical-token transducer
 
-Se construye como un *trie* sobre las claves limpias (alias del catálogo pasados por T1). Con el catálogo actual tiene 359 estados y 419 transiciones.
+It is built as a *trie* over the cleaned keys (catalog aliases passed through T1). With the current catalog it has 359 states and 419 transitions.
 
 ```text
 M2 = (Q, Σ, Γ, δ, ω, q0, F)
-K  = {clean(alias) | alias ∈ CATALOG}  con clean = T1 sin ⊣        # claves
-Q  = {q0, qf} ∪ {p_w | w prefijo propio no vacío de alguna k ∈ K} ∪ {p_k | k ∈ K}
+K  = {clean(alias) | alias ∈ CATALOG}  with clean = T1 without ⊣      # keys
+Q  = {q0, qf} ∪ {p_w | w non-empty proper prefix of some k ∈ K} ∪ {p_k | k ∈ K}
 Σ  = {A..Z, +, #, ⊣}
-Γ  = {los 46 tokens canónicos}
-δ  = {(p_w, c, p_wc) | wc prefijo de alguna k ∈ K}  (con p_ε = q0)
+Γ  = {the 46 canonical tokens}
+δ  = {(p_w, c, p_wc) | wc prefix of some k ∈ K}  (with p_ε = q0)
    ∪ {(p_k, ⊣, qf) | k ∈ K}
 ω  = {(p_w, c, p_wc) ↦ ε}  ∪  {(p_k, ⊣, qf) ↦ token(k)}
 q0 = q0
 F  = {qf}
 ```
 
-Fragmento para `JAVA` / `JAVASCRIPT` / `JS` (el prefijo común no interfiere gracias a `⊣`):
+Fragment for `JAVA` / `JAVASCRIPT` / `JS` (the common prefix does not interfere thanks to `⊣`):
 
 ```mermaid
 flowchart LR
@@ -74,7 +74,7 @@ flowchart LR
     JS -- "⊣ / JAVASCRIPT" --> qf
 ```
 
-Fragmento para `POSTGRES` / `POSTGRESQL`:
+Fragment for `POSTGRES` / `POSTGRESQL`:
 
 ```mermaid
 flowchart LR
@@ -84,18 +84,20 @@ flowchart LR
     PGQL -- "⊣ / POSTGRESQL" --> qf
 ```
 
-## Orden canónico por perfil
+## Canonical order per profile
 
-`profiles.py` define para cada perfil una lista de grupos ordenados; los tokens se ordenan por (grupo, posición en el grupo). Los tokens que el perfil no contempla se devuelven aparte en `outside_profile` y no se envían al autómata. Así `Git, NodeJS, JS, Postgres, React.js` produce `JAVASCRIPT, REACT, NODE_JS, POSTGRESQL, GIT`.
+`profiles.py` defines an ordered list of groups for each profile; tokens are sorted by (group, position in the group). Tokens that the profile does not cover are returned separately in `outside_profile` and are not sent to the automaton. So `Git, NodeJS, JS, Postgres, React.js` produces `JAVASCRIPT, REACT, NODE_JS, POSTGRESQL, GIT`.
 
-| Perfil | Orden de grupos |
+| Profile | Group order |
 | --- | --- |
-| Full Stack | frontend (lenguaje, framework) → backend → API → base de datos → control de versiones |
-| Machine Learning | Python → Pandas/NumPy → Scikit-learn/TensorFlow/PyTorch → desarrollo de modelos ML → SQL/PostgreSQL → Git |
+| Full Stack | frontend (language, framework) → backend → API → database → version control |
+| Machine Learning | Python → Pandas/NumPy → Scikit-learn/TensorFlow/PyTorch → ML model development → SQL/PostgreSQL → Git |
+| DevOps | Linux → Python → Docker → Kubernetes → AWS/Azure/GCP → Git |
+| Data Engineer | Python/Java → SQL → Pandas/NumPy → database → data-processing pipelines → AWS/Azure/GCP → Git |
 
-Los dos perfiles propios del equipo se añaden como nuevas entradas de `PROFILES`, y sus tecnologías como entradas de `CATALOG` (y de `patterns.py`, si la etapa 1 aún no las detecta).
+DevOps and Data Engineer are the team's own profiles; both only use technologies already in `CATALOG`. A new profile is added as a new entry in `PROFILES`, and any new technologies as entries in `CATALOG` (and in `patterns.py`, if stage 1 does not detect them yet).
 
-## Ejecución y pruebas
+## Running and tests
 
 ```powershell
 python -m pip install -e .
@@ -103,11 +105,11 @@ python -m resumelens .\resume.txt --normalize --profile full_stack
 python -m unittest discover -s tests -v
 ```
 
-`tests/test_normalization.py` cubre los ejemplos, todos los alias del catálogo, mayúsculas y espacios, prefijos, `C++`/`C#`, rechazo de valores desconocidos, equivalencia de T1 con la limpieza en Python puro, deduplicación, independencia del orden de entrada y que todo valor del dataset de la etapa 1 se normalice.
+`tests/test_normalization.py` covers the examples, every catalog alias, case and spaces, prefixes, `C++`/`C#`, rejection of unknown values, equivalence of T1 with the pure-Python cleaning, deduplication, independence from input order, and that every value in the stage 1 dataset is normalized.
 
-## Limitaciones
+## Limitations
 
-- Σ de T1 es ASCII; un carácter fuera de Σ (por ejemplo un dígito) hace que el valor se rechace.
-- `SQL Server` produce dos menciones en la etapa 1 (`SQL` y `SQL Server`), y la etapa 2 las normaliza a `SQL` y `SQL_SERVER`. Decidir si cuentan como `SQL` corresponde a la etapa 3 (o a corregir el patrón de la etapa 1).
-- El orden por perfil asume un token por grupo; si un CV trae `Pandas` y `NumPy`, ambos aparecen consecutivos y el autómata debe admitirlo.
-- El catálogo es cerrado: una tecnología no listada se reporta como no reconocida.
+- T1's Σ is ASCII; a character outside Σ (for example a digit) causes the value to be rejected.
+- `SQL Server` produces two mentions in stage 1 (`SQL` and `SQL Server`), and stage 2 normalizes them to `SQL` and `SQL_SERVER`. Deciding whether they count as `SQL` belongs to stage 3 (or to fixing the stage 1 pattern).
+- The profile ordering assumes one token per group; if a résumé lists `Pandas` and `NumPy`, both appear consecutively and the automaton must allow it.
+- The catalog is closed: a technology that is not listed is reported as unrecognized.

@@ -1,82 +1,88 @@
 # ResumeLens
 
-ResumeLens es un proyecto académico para procesar hojas de vida escritas como texto y comprobar si sus cualificaciones explícitas corresponden con patrones definidos para perfiles profesionales. El proyecto aplica modelos de lenguajes formales para que cada etapa tenga una función delimitada y resultados verificables.
+ResumeLens is an academic project that processes résumés written as plain text and checks whether their explicit qualifications match patterns defined for professional profiles. The project applies formal language models so that each stage has a well-defined function and verifiable results.
 
-ResumeLens **no ordena candidatos, no recomienda contrataciones y no toma decisiones de empleo**. Solo procesa información escrita en el CV y evalúa patrones previamente definidos.
+ResumeLens **does not rank candidates, recommend hires, or make employment decisions**. It only processes information written in the résumé and evaluates previously defined patterns.
 
-## Contexto y objetivo del proyecto
+## Project context and goal
 
-Las hojas de vida presentan la misma cualificación de varias maneras: por ejemplo, `JavaScript`, `Javascript` y `JS`; o `Scikit-learn`, `sklearn` y `scikit learn`. También organizan sus estudios, experiencia y habilidades con formatos diferentes. ResumeLens busca extraer esas menciones, normalizar sus variantes, compararlas con perfiles profesionales y validar una representación estructurada de los resultados.
+Résumés present the same qualification in several ways: for example, `JavaScript`, `Javascript`, and `JS`; or `Scikit-learn`, `sklearn`, and `scikit learn`. They also organize education, experience, and skills in different formats. ResumeLens extracts those mentions, normalizes their variants, compares them with professional profiles, and validates a structured representation of the results.
 
-El sistema debe procesar cuatro perfiles usando una misma solución:
+The system must process four profiles using a single solution:
 
-1. **Full Stack Developer**, perfil de referencia de ingeniería de software.
-2. **Machine Learning Engineer**, perfil de referencia de IA y datos.
-3. Un perfil adicional de ingeniería de software definido por el equipo.
-4. Un perfil adicional de IA o datos definido por el equipo.
+1. **Full Stack Developer**, the software engineering reference profile.
+2. **Machine Learning Engineer**, the AI and data reference profile.
+3. An additional software engineering profile defined by the team.
+4. An additional AI or data profile defined by the team.
 
-Los dos perfiles adicionales y sus patrones deben acordarse y documentarse por el equipo. La implementación actual no pretende representar todavía los cuatro perfiles.
+The two additional profiles chosen by the team are **DevOps Engineer** (software engineering) and **Data Engineer** (AI/data). Their patterns are described in [docs/stage-3-recognition.md](docs/stage-3-recognition.md).
 
-## Flujo general del sistema
+## System overview
 
-El proyecto completo se organiza en estas etapas:
+The complete project is organized into these stages:
 
-| Etapa | Modelo | Propósito | Estado en este repositorio |
+| Stage | Model | Purpose | Status in this repository |
 | --- | --- | --- | --- |
-| 1. Extracción | Expresiones regulares con `re` de Python | Detectar texto de contacto, cualificaciones, formación y experiencia, conservando las menciones originales. | Implementada y probada. |
-| 2. Normalización | Transductores finitos con `pyformlang` | Convertir variantes explícitas de cualificaciones a nombres canónicos. | Solo hay una vista previa pequeña para probar el flujo desde la extracción. |
-| 3. Reconocimiento de perfiles | Autómatas finitos con `pyformlang` | Comprobar si el conjunto ordenado de cualificaciones satisface un patrón de perfil. | Pendiente. |
-| 4. Estructuración | Gramática libre de contexto y `textX` | Validar una representación DSL de la información y del resultado de perfil. | Pendiente. |
-| 5. Visualización | HTML o Markdown | Presentar la información estructurada validada. | Pendiente. |
+| 1. Extraction | Regular expressions with Python's `re` | Detect contact data, qualifications, education, and experience, keeping the original mentions. | Implemented and tested. |
+| 2. Normalization | Finite-state transducers with `pyformlang` | Convert explicit qualification variants into canonical names. | Implemented and tested: two transducers (cleaning and alias → token) over a catalog of 46 tokens. |
+| 3. Profile recognition | Finite automata with `pyformlang` | Check whether the ordered set of qualifications satisfies a profile pattern. | Implemented: one DFA for each of the four profiles. |
+| 4. Structuring | Context-free grammar and `textX` | Validate a DSL representation of the information and the profile result. | Pending. |
+| 5. Visualization | HTML or Markdown | Present the validated structured information. | Pending. |
 
-La salida de cada etapa alimenta la siguiente. El flujo principal del repositorio hoy es **texto UTF-8 → extracción → estructura de menciones en JSON**; la vista previa opcional muestra cómo una mención extraída puede pasar a una primera normalización.
+The output of each stage feeds the next one. The pipeline implemented today is **UTF-8 text → extraction (literal mentions) → normalization (canonical tokens ordered by profile) → recognition (ACCEPTED / REJECTED per profile)**.
 
-## Estado y alcance de esta entrega
+## Status and scope of this delivery
 
-El foco de esta entrega es el **punto 1: extracción con expresiones regulares**. Se implementan la API Python, el comando de consola, documentación de los patrones y pruebas automatizadas. El punto 2 aparece solo como una demostración de `JS`, `Javascript` y `JavaScript` → `JAVASCRIPT`; no es la normalización completa requerida para el proyecto.
+**Stages 1, 2, and 3** are implemented:
 
-La extracción conserva literalmente lo escrito. Por ejemplo, `JS` sigue siendo `JS` en los resultados del punto 1; el alias se convierte únicamente cuando se ejecuta la vista previa separada del punto 2. El extractor no infiere equivalencias ni reconoce perfiles.
+- **Stage 1:** extraction with regular expressions, with a Python API, a command-line interface, pattern documentation, and a regression dataset.
+- **Stage 2:** normalization with two `pyformlang` finite-state transducers generated from a single alias catalog, plus canonical ordering per profile.
+- **Stage 3:** one deterministic finite automaton per profile (Full Stack, Machine Learning, DevOps, and Data Engineer).
 
-## Desarrollo del punto 1: extracción
+Stages 4 (grammar and `textX`) and 5 (visualization) are pending.
 
-### Objetivo y entradas
+Each stage respects its boundary. Extraction keeps the text literally as written: `JS` is still `JS` in stage 1. The alias becomes `JAVASCRIPT` in stage 2, and only stage 3 decides whether the set of tokens satisfies a profile.
 
-El extractor recibe una cadena Python con el contenido de una hoja de vida. La interfaz de consola lee archivos de texto plano UTF-8 (`.txt`). Convertir PDF, DOCX o imágenes a texto no forma parte de esta etapa.
+## Stage 1: extraction
 
-La consigna indica que cada tipo de información relevante debe tener una expresión regular definida, una explicación del patrón que reconoce, una implementación con el módulo `re` y un lugar donde guardar los resultados. Esta implementación cumple esos aspectos con el catálogo en [`src/resumelens/patterns.py`](src/resumelens/patterns.py), la ejecución en [`src/resumelens/extraction.py`](src/resumelens/extraction.py) y el modelo `ExtractionResult`. El detalle de cada regex, el lenguaje que reconoce y sus límites está en [docs/stage-1-extraction.md](docs/stage-1-extraction.md).
+### Goal and inputs
 
-### Información detectada
+The extractor receives a Python string with the content of a résumé. The command-line interface reads UTF-8 plain-text files (`.txt`). Converting PDF, DOCX, or images to text is not part of this stage.
 
-| Tipo | Ejemplos de texto reconocido | Representación de salida |
+The assignment states that each relevant type of information must have a defined regular expression, an explanation of the pattern it recognizes, an implementation with the `re` module, and a place to store the results. This implementation covers those points with the catalog in [`src/resumelens/extraction/patterns.py`](src/resumelens/extraction/patterns.py), the execution in [`src/resumelens/extraction/extraction.py`](src/resumelens/extraction/extraction.py), and the `ExtractionResult` model. The details of each regex, the language it recognizes, and its limits are in [docs/stage-1-extraction.md](docs/stage-1-extraction.md).
+
+### Detected information
+
+| Type | Examples of recognized text | Output representation |
 | --- | --- | --- |
-| Correos | `alex@example.com`, `Jane.Doe+work@Example.org` | `contacts.emails` |
-| Teléfonos | `+57 300 123 4567`, `2025550142` | `contacts.phones`; se filtran fechas numéricas comunes. |
-| Enlaces | URLs que empiezan por `http://`, `https://` o `www.` | `contacts.linkedin`, `contacts.github` o `contacts.websites`, según el host. |
-| Lenguajes de programación | `JavaScript`, `JS`, `TypeScript`, `Python`, `C++`, `SQL` | `skills.programming_languages` |
-| Frameworks y librerías | `React.js`, `NodeJS`, `Django`, `Pandas`, `sklearn`, `TensorFlow`, `PyTorch` | `skills.frameworks_libraries` |
-| Bases de datos | `Postgres`, `PostgreSQL`, `MySQL`, `MongoDB`, `SQL Server` | `skills.databases` |
-| Herramientas y tecnologías | `Git`, `Docker`, `Kubernetes`, `REST API`, `AWS`, `Linux` | `skills.tools_and_technologies` |
-| Otras cualificaciones de los perfiles de referencia | `web applications`, `backend services`, `predictive models`, `data-processing pipelines`, `Machine-learning model development` | `other_qualifications`, agrupadas por tema. |
-| Formación académica | `Bachelor of Science`, `B.Sc.`, `Master's degree`, `PhD` | `academic_degrees` |
-| Duración de experiencia | `3 years of experience`, `Experience: 2.5 years`, `4+ yrs professional experience` | `experience` |
-| Bloque de experiencia | Texto bajo `Experience`, `Work Experience` o `Professional Experience` | `experience_sections`, hasta el siguiente encabezado reconocido. |
+| Emails | `alex@example.com`, `Jane.Doe+work@Example.org` | `contacts.emails` |
+| Phone numbers | `+57 300 123 4567`, `2025550142` | `contacts.phones`; common numeric dates are filtered out. |
+| Links | URLs starting with `http://`, `https://`, or `www.` | `contacts.linkedin`, `contacts.github`, or `contacts.websites`, depending on the host. |
+| Programming languages | `JavaScript`, `JS`, `TypeScript`, `Python`, `C++`, `SQL` | `skills.programming_languages` |
+| Frameworks and libraries | `React.js`, `NodeJS`, `Django`, `Pandas`, `sklearn`, `TensorFlow`, `PyTorch` | `skills.frameworks_libraries` |
+| Databases | `Postgres`, `PostgreSQL`, `MySQL`, `MongoDB`, `SQL Server` | `skills.databases` |
+| Tools and technologies | `Git`, `Docker`, `Kubernetes`, `REST API`, `AWS`, `Linux` | `skills.tools_and_technologies` |
+| Other qualifications from the reference profiles | `web applications`, `backend services`, `predictive models`, `data-processing pipelines`, `Machine-learning model development` | `other_qualifications`, grouped by topic. |
+| Education | `Bachelor of Science`, `B.Sc.`, `Master's degree`, `PhD` | `academic_degrees` |
+| Experience duration | `3 years of experience`, `Experience: 2.5 years`, `4+ yrs professional experience` | `experience` |
+| Experience block | Text under `Experience`, `Work Experience`, or `Professional Experience` | `experience_sections`, up to the next recognized heading. |
 
-El catálogo es explícito y acotado: no detecta automáticamente cualquier tecnología o frase nueva. Para ampliar la cobertura se agrega una alternativa al patrón apropiado, se explica qué texto reconoce y se añade un caso de prueba.
+The catalog is explicit and bounded: it does not automatically detect any new technology or phrase. To extend coverage, add an alternative to the appropriate pattern, explain what text it recognizes, and add a test case.
 
-### Cómo se ejecutan los patrones
+### How the patterns run
 
-1. `patterns.py` define cada patrón y, para las categorías de habilidades, su grupo y descripción mediante `PatternDefinition`.
-2. `extract_resume(text)` valida la entrada y aplica los patrones con `re.finditer`, normalmente con `re.IGNORECASE`. Las expresiones de encabezado usan los indicadores inline `(?im)` para búsqueda multilínea sin distinguir mayúsculas.
-3. Cada coincidencia se guarda como `ExtractionMatch(value, start, end)`. `value` copia exactamente el fragmento original; `start` y `end` son offsets Python y el extremo `end` no se incluye.
-4. Las URLs se clasifican por host y se les quita la puntuación final de oración. Los candidatos a teléfono con forma de fecha común se descartan.
-5. Las duraciones de experiencia se extraen con regex; los bloques de experiencia se capturan entre un encabezado laboral y el siguiente encabezado común del CV.
-6. El resultado se agrupa en `ExtractionResult`, con categorías vacías estables, y se puede serializar con `to_dict()` o `to_json()`.
+1. `patterns.py` defines each pattern and, for skill categories, its group and description through `PatternDefinition`.
+2. `extract_resume(text)` validates the input and applies the patterns with `re.finditer`, usually with `re.IGNORECASE`. Heading expressions use the inline flags `(?im)` for case-insensitive multiline search.
+3. Each match is stored as `ExtractionMatch(value, start, end)`. `value` copies the original fragment exactly; `start` and `end` are Python offsets, and `end` is exclusive.
+4. URLs are classified by host and trailing sentence punctuation is removed. Phone candidates shaped like common dates are discarded.
+5. Experience durations are extracted with regex; experience blocks are captured between a work-experience heading and the next common résumé heading.
+6. The result is grouped into `ExtractionResult`, with stable empty categories, and can be serialized with `to_dict()` or `to_json()`.
 
-Las coincidencias no se canonicalizan ni se usan para evaluar perfiles en esta etapa. Por ejemplo, que aparezca `Python` en un CV no implica que la persona tenga determinado nivel de dominio.
+Matches are not canonicalized or used to evaluate profiles at this stage. For example, `Python` appearing in a résumé does not imply that the person has a given level of proficiency.
 
-### Forma del resultado
+### Output shape
 
-Cada mención contiene su texto y los offsets que permiten recuperarla de la entrada. Simplificado, el JSON incluye:
+Each mention contains its text and the offsets needed to recover it from the input. Simplified, the JSON includes:
 
 ```json
 {
@@ -104,20 +110,96 @@ Cada mención contiene su texto y los offsets que permiten recuperarla de la ent
 }
 ```
 
-Los índices del ejemplo son ilustrativos; para cada entrada real se calculan desde la cadena fuente. La documentación ampliada incluye las expresiones completas y sus reglas de reconocimiento.
+The indices in the example are illustrative; for each real input they are computed from the source string. The extended documentation includes the complete expressions and their recognition rules.
 
-### Limitaciones conocidas
+### Known limitations
 
-- La CLI acepta texto plano UTF-8; no extrae texto de PDF, DOCX ni imágenes.
-- El catálogo cubre vocabulario explícito. Una tecnología, abreviatura o descripción que no esté contemplada no se extraerá.
-- Los nombres de títulos, duraciones y encabezados se orientan principalmente a CV en inglés; se pueden agregar variantes en otros idiomas.
-- La identificación de teléfonos es por forma y no valida números contra un plan telefónico nacional.
-- El bloque de experiencia depende de encabezados reconocidos en una línea propia; otro formato puede requerir ampliar el catálogo de encabezados.
-- Las coincidencias explícitas no son prueba de dominio ni una recomendación de contratación.
+- The CLI accepts UTF-8 plain text; it does not extract text from PDF, DOCX, or images.
+- The catalog covers explicit vocabulary. A technology, abbreviation, or description that is not included will not be extracted.
+- Degree names, durations, and headings are mainly oriented to résumés in English; variants in other languages can be added.
+- Phone numbers are identified by shape and are not validated against a national numbering plan.
+- The experience block depends on recognized headings on their own line; a different format may require extending the heading catalog.
+- Explicit matches are not proof of proficiency or a hiring recommendation.
 
-## Instalación y uso
+## Stage 2: normalization
 
-Se recomienda un entorno virtual para aislar las dependencias de este proyecto. Requiere Python 3.10 o posterior.
+### Goal and inputs
+
+Stage 2 converts the literal mentions in `skills` and `other_qualifications` (for example `JS`, `React.js`, `scikit learn`, `Machine-learning model development`) into canonical tokens (`JAVASCRIPT`, `REACT`, `SCIKIT_LEARN`, `ML_MODEL_DEVELOPMENT`). Contact data, degrees, and years of experience have no equivalences to normalize and are left out. The formal definition of each transducer (7-tuple), its diagrams, and the design decisions are in [docs/stage-2-normalization.md](docs/stage-2-normalization.md).
+
+### How it works
+
+1. **T1, cleaning transducer:** converts to uppercase and removes spaces and separators (`-`, `.`, `_`), keeping `+` and `#`. This way `React.js`, `ReactJS`, and `react js` all produce `REACTJS`.
+2. **T2, alias-to-token transducer:** a *trie* over the cleaned keys that emits the canonical token only when it reads the end marker `⊣`, so prefixes such as `JAVA`/`JAVASCRIPT` or `SQL`/`SQLITE` are not confused.
+3. Both transducers are generated from [`normalization/catalog.py`](src/resumelens/normalization/catalog.py), the single source of truth for the 46 tokens and their aliases. An ambiguous alias stops construction with a `ValueError`.
+4. Tokens are deduplicated. Values that T2 does not recognize are reported in `unrecognized`. If a profile is given, tokens are ordered according to [`profiles.py`](src/resumelens/profiles.py), and those the profile does not cover are placed in `outside_profile`.
+
+### Output shape
+
+`normalize_text(text, profile)` returns a `NormalizationResult`. Simplified, for `JS, React.js, NodeJS, Postgres, Git, Docker` with the `full_stack` profile:
+
+```json
+{
+  "mentions": [{"value": "JS", "start": 35, "end": 37, "source": "skills.programming_languages", "token": "JAVASCRIPT"}],
+  "tokens": ["JAVASCRIPT", "REACT", "NODE_JS", "POSTGRESQL", "GIT", "DOCKER"],
+  "unrecognized": [],
+  "profile": "full_stack",
+  "ordered_tokens": ["JAVASCRIPT", "REACT", "NODE_JS", "POSTGRESQL", "GIT"],
+  "outside_profile": ["DOCKER"]
+}
+```
+
+### Stage 2 limitations
+
+- T1's alphabet is ASCII; a value with a character outside it (for example a digit) is rejected.
+- The catalog is closed: a technology that is not listed appears in `unrecognized`.
+
+## Stage 3: profile recognition
+
+### Goal and inputs
+
+Stage 3 receives the canonical tokens from stage 2 and decides, for each profile, whether they form an accepted qualification pattern. Each profile is modeled with a **deterministic finite automaton (DFA)** built with `pyformlang` in [`src/resumelens/recognition/`](src/resumelens/recognition/). The formal definition `M = (Q, Σ, δ, q0, F)`, the justification of the automaton type, the transition diagrams, and the examples for each profile are in [docs/stage-3-recognition.md](docs/stage-3-recognition.md).
+
+### How it works
+
+1. Tokens are deduplicated and sorted according to the profile's canonical order (`profiles.py`). Those the profile does not cover are reported in `outside_profile` and never reach the automaton.
+2. The sorted sequence is the word read by the DFA. There is one state per qualification group, self-loops to allow several tokens from the same group, and direct transitions to skip optional groups.
+3. Σ is the full catalog of 46 canonical tokens. Any unexpected transition leads to the sink state `q_dead`, so δ is total and the automaton is deterministic.
+4. If the run ends in the accepting state `q_V`, the result is `ACCEPTED`; otherwise, `REJECTED`. The result also includes the state path.
+
+### Profile patterns
+
+| Profile | Module | Pattern (canonical order) |
+| --- | --- | --- |
+| Full Stack Developer | `full_stack.py` | `(JAVASCRIPT\|TYPESCRIPT)+ (REACT\|ANGULAR\|VUE)+ BACKEND+ REST_API* DATABASE+ GIT+` |
+| Machine Learning Engineer | `ml_engineer.py` | `PYTHON+ (PANDAS\|NUMPY)+ (SCIKIT_LEARN\|TENSORFLOW\|PYTORCH)+ ML_MODEL_DEVELOPMENT* (SQL\|POSTGRESQL)+ GIT+` |
+| DevOps Engineer | `devops.py` | `LINUX+ PYTHON* DOCKER+ KUBERNETES* (AWS\|AZURE\|GCP)+ GIT+` |
+| Data Engineer | `data_engineer.py` | `(PYTHON\|JAVA)+ SQL+ (PANDAS\|NUMPY)* DATABASE+ DATA_PROCESSING_PIPELINE* (AWS\|AZURE\|GCP)+ GIT+` |
+
+`BACKEND` groups `NODE_JS`, `DJANGO`, `SPRING_BOOT`, `FLASK`, `FASTAPI`, and `EXPRESS`; `DATABASE` groups the seven database engines in the catalog. Groups marked with `*` are optional.
+
+### Example
+
+```python
+from resumelens.recognition.ml_engineer import recognize_ml_engineer
+
+result = recognize_ml_engineer(["PYTHON", "PANDAS", "TENSORFLOW", "POSTGRESQL", "GIT"])
+print(result.verdict)  # ACCEPTED
+print(result.path)     # ['q0', 'q_P', 'q_L', 'q_M', 'q_S', 'q_V']
+```
+
+Each module also provides `recognize_<profile>_text(text)`, which runs extraction, normalization, and recognition on the résumé text. With the example résumés, each one is accepted only by its own profile.
+
+### Stage 3 limitations
+
+- A résumé that mentions `SQL Server` also produces the `SQL` token in stage 1, so it satisfies the SQL group of ML Engineer and Data Engineer.
+- The team's profiles only use the current catalog vocabulary; tools such as Jenkins, Terraform, Spark, or Airflow are not recognized yet.
+- The verdict depends on explicit mentions and does not evaluate experience or proficiency.
+- There are no automated tests specific to this stage yet, and no command-line option for recognition.
+
+## Installation and usage
+
+A virtual environment is recommended to isolate this project's dependencies. Python 3.10 or later is required.
 
 ```powershell
 python -m venv .venv
@@ -125,81 +207,95 @@ python -m venv .venv
 python -m pip install -e .
 ```
 
-En macOS o Linux, el comando de activación es `source .venv/bin/activate`; los demás comandos son iguales. Si la política de PowerShell impide activar el entorno, usa directamente `.\.venv\Scripts\python.exe` en lugar de `python` en los comandos.
+On macOS or Linux, the activation command is `source .venv/bin/activate`; the other commands are the same. If the PowerShell execution policy prevents activating the environment, use `.\.venv\Scripts\python.exe` directly instead of `python` in the commands.
 
-Con el entorno activo, guarda el CV de texto como `resume.txt` y ejecuta:
+With the environment active, save the résumé text as `resume.txt` and run:
 
 ```powershell
 python -m resumelens .\resume.txt
 ```
 
-Para guardar el JSON en un archivo:
+To save the JSON to a file:
 
 ```powershell
 python -m resumelens .\resume.txt --output .\extraction.json
 ```
 
-También se puede usar `-o` en lugar de `--output`. La API está disponible desde Python:
+`-o` can also be used instead of `--output`. To get the normalized tokens from stage 2, optionally ordered by a profile (`full_stack`, `ml_engineer`, `devops`, or `data_engineer`):
+
+```powershell
+python -m resumelens .\resume.txt --normalize
+python -m resumelens .\resume.txt --normalize --profile ml_engineer
+```
+
+The Python API covers the three stages:
 
 ```python
 from resumelens import extract_resume
+from resumelens.normalization import normalize_text
+from resumelens.recognition.full_stack import recognize_full_stack_text
 
-result = extract_resume("Skills: JS, React.js, NodeJS, Postgres, Git.")
-print(result.to_json())
+text = "Skills: JS, React.js, NodeJS, Postgres, Git."
+print(extract_resume(text).to_json())              # stage 1
+print(normalize_text(text, "full_stack").to_dict())  # stage 2
+print(recognize_full_stack_text(text).verdict)     # stage 3: ACCEPTED
 ```
 
-## Pruebas y verificación
+## Tests and verification
 
-Con `.venv` activo, ejecuta la suite completa:
+With `.venv` active, run the full suite:
 
 ```powershell
 python -m unittest discover -s tests -v
 ```
 
-El dataset [`tests/fixtures/stage1_extraction_dataset.json`](tests/fixtures/stage1_extraction_dataset.json) contiene **94 casos de regresión** con IDs únicos. La suite cubre los ejemplos de Full Stack y Machine Learning de la consigna, categorías y variantes, límites para evitar coincidencias parciales, datos de contacto, offsets Unicode, serialización JSON y salidas de consola y archivo. Si también instalas el extra opcional del punto 2, la prueba de integración del transductor se ejecuta en vez de omitirse.
+The dataset [`tests/fixtures/stage1_extraction_dataset.json`](tests/fixtures/stage1_extraction_dataset.json) contains **94 regression cases** with unique IDs. For stage 1, the suite covers the Full Stack and Machine Learning examples from the assignment, categories and variants, boundaries that prevent partial matches, contact data, Unicode offsets, JSON serialization, and console and file output. For stage 2, [`tests/test_normalization.py`](tests/test_normalization.py) covers every catalog alias, case and separators, prefixes, `C++`/`C#`, rejection of unknown values, deduplication, profile ordering, and that every value in the stage 1 dataset is normalized. In total, 121 tests run. Stage 3 does not have its own automated tests yet.
 
-## Dependencias por etapa
+## Dependencies
 
-- Punto 1: no usa paquetes externos en tiempo de ejecución.
-- Instalación del paquete: `setuptools`, declarado como backend de construcción en `pyproject.toml`.
-- Vista previa del punto 2: `pyformlang` y sus dependencias, declarados como extra opcional `stage2-preview`.
+- `pyformlang` (`>=1.0,<2`): required dependency declared in `pyproject.toml`; used for the stage 2 transducers and the stage 3 automata. It is installed with `python -m pip install -e .`.
+- `setuptools`: the package build backend.
+- Stage 1 only uses the standard library (`re`).
 
-Para activar y probar la vista previa del transductor:
-
-```powershell
-python -m pip install -e ".[stage2-preview]"
-python -m unittest discover -s tests -p "test_normalization_preview.py" -v
-```
-
-La demostración solo transforma `JS`, `Javascript` y `JavaScript` en `JAVASCRIPT`. Su modelo y alcance están descritos en [docs/stage-2-normalization-preview.md](docs/stage-2-normalization). La API de `pyformlang` y la documentación del proyecto se mantienen como referencias para completar después el punto 2.
-
-## Estructura del repositorio
+## Repository structure
 
 ```text
 src/resumelens/
-  __init__.py                  API pública
-  __main__.py                  Entrada para python -m resumelens
-  cli.py                       Lectura de texto y salida JSON
-  extraction.py                Extracción y estructuras de resultados
-  normalization_preview.py     Demostración opcional del punto 2
-  patterns.py                  Catálogo de expresiones regulares
-pyproject.toml                 Configuración de instalación
+  __init__.py                  Public API (extraction)
+  __main__.py                  Entry point for python -m resumelens
+  cli.py                       Text input and JSON output (--normalize, --profile)
+  profiles.py                  Groups and canonical order of the four profiles
+  normalization_preview.py     Initial stage 2 demo (JavaScript aliases only)
+  extraction/                  Stage 1
+    extraction.py              Extraction and result structures
+    patterns.py                Regular expression catalog
+  normalization/               Stage 2
+    catalog.py                 Canonical tokens and their aliases
+    transducers.py             Transducers T1 (cleaning) and T2 (alias → token)
+    pipeline.py                Normalization of the extraction and profile ordering
+  recognition/                 Stage 3
+    full_stack.py              Full Stack Developer DFA
+    ml_engineer.py             Machine Learning Engineer DFA
+    devops.py                  DevOps Engineer DFA
+    data_engineer.py           Data Engineer DFA
+  structuring/                 Stage 4 (pending)
+pyproject.toml                 Installation configuration
 tests/
   test_cli.py
   test_extraction.py
+  test_normalization.py
   test_normalization_preview.py
   test_stage1_dataset.py
   fixtures/stage1_extraction_dataset.json
 docs/
   stage-1-extraction.md
-  stage-2-normalization-preview.md
+  stage-2-normalization.md
+  stage-3-recognition.md
 ```
 
-## Próximos pasos para el equipo
+## Next steps for the team
 
-1. Completar el punto 2 con transductores que normalicen las variantes acordadas por el equipo. Para cada uno, documentar el 7-tuplo, el diagrama y pruebas con entradas y salidas esperadas.
-2. Definir los cuatro perfiles —incluidos los dos adicionales del equipo— y reconocer sus patrones mediante autómatas finitos.
-3. Diseñar la gramática EBNF del perfil estructurado, implementarla con `textX` y probar que acepte entradas válidas y rechace las inválidas.
-4. Generar la visualización Markdown o HTML desde el perfil estructurado validado.
-
-La vista previa del punto 2 sirve para demostrar el encadenamiento, pero no reemplaza el diseño y la implementación que faltan en esas etapas.
+1. Add automated tests for the four stage 3 automata and a command-line option that runs recognition.
+2. Fix the double `SQL Server` mention in stage 1 and extend the catalog with tools for the team's profiles (for example Jenkins, Terraform, Spark, or Airflow).
+3. Design the EBNF grammar for the structured profile, implement it with `textX`, and test that it accepts valid inputs and rejects invalid ones.
+4. Generate the Markdown or HTML visualization from the validated structured profile.
