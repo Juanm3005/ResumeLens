@@ -52,9 +52,40 @@ ML_ENGINEER = ProfileSpec(
     ),
 )
 
+DEVOPS = ProfileSpec(
+    "DEVOPS_ENGINEER",
+    (
+        ("operating_system", ("LINUX",)),
+        ("scripting", ("PYTHON",)),
+        ("containers", ("DOCKER",)),
+        ("orchestration", ("KUBERNETES",)),
+        ("cloud", ("AWS", "AZURE", "GCP")),
+        ("version_control", ("GIT",)),
+    ),
+)
+
+DATA_ENGINEER = ProfileSpec(
+    "DATA_ENGINEER",
+    (
+        ("language", ("PYTHON", "JAVA")),
+        ("query_language", ("SQL",)),
+        ("data_libraries", ("PANDAS", "NUMPY")),
+        (
+            "database",
+            ("POSTGRESQL", "MYSQL", "SQLITE", "MONGODB", "REDIS", "ORACLE",
+             "SQL_SERVER"),
+        ),
+        ("pipelines", ("DATA_PROCESSING_PIPELINE",)),
+        ("cloud", ("AWS", "AZURE", "GCP")),
+        ("version_control", ("GIT",)),
+    ),
+)
+
 PROFILES: dict[str, ProfileSpec] = {
     "full_stack": FULL_STACK,
     "ml_engineer": ML_ENGINEER,
+    "devops": DEVOPS,
+    "data_engineer": DATA_ENGINEER,
 }
 
 
