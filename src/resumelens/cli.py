@@ -1,4 +1,4 @@
-"""Command-line interface for ResumeLens (stage 1 extraction, stage 2 normalization)."""
+"""Command-line interface for ResumeLens (stages 1, 2 and 4)."""
 
 from __future__ import annotations
 
@@ -15,12 +15,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Extract résumé information with the ResumeLens stage-one regexes."
     )
-    parser.add_argument("resume", type=Path, help="UTF-8 text file containing a résumé")
+    parser.add_argument(
+        "resume",
+        type=Path,
+        help="UTF-8 text file containing a résumé (or a DSL file with --validate)",
+    )
     parser.add_argument(
         "--output",
         "-o",
         type=Path,
-        help="write JSON to this file instead of standard output",
+        help="write the result to this file instead of standard output",
     )
     parser.add_argument(
         "--normalize",
@@ -32,16 +36,44 @@ def main(argv: Sequence[str] | None = None) -> int:
         choices=("full_stack", "ml_engineer", "devops", "data_engineer"),
         help="with --normalize, sort tokens in the canonical order of this profile",
     )
+    parser.add_argument(
+        "--dsl",
+        action="store_true",
+        help="print the stage-4 candidate-profile DSL document (validated with textX)",
+    )
+    parser.add_argument(
+        "--validate",
+        action="store_true",
+        help="treat the input as a candidate-profile DSL file and validate it",
+    )
     args = parser.parse_args(argv)
     if args.profile and not args.normalize:
         parser.error("--profile requires --normalize")
+    if sum((args.normalize, args.dsl, args.validate)) > 1:
+        parser.error("--normalize, --dsl and --validate are mutually exclusive")
 
     try:
         text = args.resume.read_text(encoding="utf-8")
     except OSError as error:
         parser.error(f"could not read {args.resume}: {error}")
 
-    if args.normalize:
+    if args.validate or args.dsl:
+        # Imported lazily so stages 1-2 keep working without textX.
+        from textx.exceptions import TextXError
+
+        from .structuring.builder import build_candidate_profile
+        from .structuring.dsl import parse_candidate_profile_file
+
+        try:
+            if args.validate:
+                parse_candidate_profile_file(args.resume)
+                result = f"{args.resume}: valid candidate profile\n"
+            else:
+                result = build_candidate_profile(text)
+        except TextXError as error:
+            sys.stderr.write(f"{args.resume}: invalid candidate profile: {error}\n")
+            return 1
+    elif args.normalize:
         # Imported lazily so stage 1 keeps working without pyformlang.
         from .normalization import normalize_text
 

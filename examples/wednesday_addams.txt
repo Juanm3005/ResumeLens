@@ -1,0 +1,16 @@
+Wednesday Addams
+Email: wednesday.addams@example.com
+Phone: +57 300 123 4567
+GitHub: https://github.com/wednesday-addams
+3 years of experience developing web applications and data-processing pipelines.
+
+Education:
+Bachelor of Science in Computer Science
+
+Experience:
+- Developed web applications for organizing investigation notes.
+- Implemented backend services using Node.js and REST APIs.
+- Built data-processing pipelines in Python with Pandas on AWS.
+
+Technical Skills:
+JS, React.js, NodeJS, Python, SQL, Pandas, Postgres, AWS, Git.
