@@ -1,0 +1,131 @@
+/*
+  Stage 4: candidate-profile DSL (context-free grammar for textX).
+
+  A document describes one candidate. Sections appear in a fixed order;
+  personal, skills and classification are mandatory, the rest are optional.
+  Keywords are matched as whole words (the metamodel uses autokwd=True).
+*/
+
+CandidateProfile:
+    'candidate' '{'
+        personal=PersonalInfo
+        contact=ContactInfo?
+        education=Education?
+        experience=Experience?
+        skills=Skills
+        classification=Classification
+    '}'
+;
+
+// ---------------------------------------------------------------- personal
+PersonalInfo:
+    'personal' '{'
+        'name' ':' name=STRING ';'
+        ('location' ':' location=STRING ';')?
+        ('role' ':' role=STRING ';')?
+        ('summary' ':' summary=STRING ';')?
+    '}'
+;
+
+// ----------------------------------------------------------------- contact
+ContactInfo:
+    'contact' '{'
+        entries+=ContactEntry
+    '}'
+;
+
+ContactEntry:
+    EmailEntry | PhoneEntry | LinkEntry
+;
+
+EmailEntry:
+    'email' ':' value=Email ';'
+;
+
+PhoneEntry:
+    'phone' ':' value=Phone ';'
+;
+
+LinkEntry:
+    kind=LinkKind ':' value=Url ';'
+;
+
+LinkKind:
+    'linkedin' | 'github' | 'website'
+;
+
+// --------------------------------------------------------------- education
+Education:
+    'education' '{'
+        degrees+=Degree
+    '}'
+;
+
+Degree:
+    'degree' ':' title=STRING ('at' institution=STRING)? ';'
+;
+
+// -------------------------------------------------------------- experience
+Experience:
+    'experience' '{'
+        ('total' ':' total=Duration ';')?
+        jobs+=Job
+    '}'
+;
+
+Job:
+    'job' '{'
+        ('title' ':' title=STRING ';')?
+        ('organization' ':' organization=STRING ';')?
+        ('duration' ':' duration=Duration ';')?
+        ('activity' ':' activities+=STRING ';')*
+    '}'
+;
+
+Duration:
+    value=NUMBER atLeast?='+' unit=DurationUnit
+;
+
+// ------------------------------------------------------------------ skills
+Skills:
+    'skills' '{'
+        groups*=SkillGroup
+    '}'
+;
+
+SkillGroup:
+    category=SkillCategory ':' tokens+=Token[','] ';'
+;
+
+SkillCategory:
+    'languages' | 'frameworks' | 'databases' | 'tools' | 'qualifications'
+;
+
+// ---------------------------------------------------------- classification
+Classification:
+    'classification' '{'
+        ( accepted+=AcceptedProfile | none?='none' ';' )
+    '}'
+;
+
+AcceptedProfile:
+    'accepted' profile=ProfileName '{'
+        'sequence' ':' sequence+=Token[','] ';'
+    '}'
+;
+
+ProfileName:
+    'FULL_STACK_DEVELOPER' | 'MACHINE_LEARNING_ENGINEER'
+    | 'DEVOPS_ENGINEER' | 'DATA_ENGINEER'
+;
+
+// --------------------------------------------------------------- terminals
+Token:          /[A-Z][A-Z0-9]*(_[A-Z0-9]+)*/;
+Email:          /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/;
+Phone:          /\+?[0-9][0-9() .-]{5,}[0-9]/;
+Url:            /(?:https?:\/\/|www\.)[^\s;]+/;
+DurationUnit:   /(?:years?|months?)\b/;
+
+Comment:
+    /\/\/.*?$/ | /\/\*(.|\n)*?\*\//
+;

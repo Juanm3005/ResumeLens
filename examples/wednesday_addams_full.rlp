@@ -1,0 +1,36 @@
+// Hand-written profile with the data of the assignment's sample HTML
+// (outputVisualization.html). It uses the fields Stage 1 does not extract yet.
+candidate {
+    personal {
+        name: "Wednesday Addams";
+        location: "Nevermore Academy, Jericho";
+        role: "Student and independent investigator";
+        summary: "Detail-oriented developer with three years of experience developing web applications. Experienced in building applications that organize information, investigate unusual events, and manage structured records.";
+    }
+    contact {
+        email: wednesday.addams@example.com;
+    }
+    experience {
+        job {
+            title: "Web Application Developer";
+            organization: "Nevermore Academy Projects";
+            duration: 3 years;
+            activity: "Developed web applications for organizing investigation notes and structured information.";
+            activity: "Created interfaces for consulting records related to events, people, and locations.";
+            activity: "Implemented backend services using Node.js.";
+            activity: "Stored structured information using PostgreSQL databases.";
+            activity: "Used Git to maintain version history of the applications.";
+        }
+    }
+    skills {
+        languages: JAVASCRIPT;
+        frameworks: REACT, NODE_JS;
+        databases: POSTGRESQL;
+        tools: GIT;
+    }
+    classification {
+        accepted FULL_STACK_DEVELOPER {
+            sequence: JAVASCRIPT, REACT, NODE_JS, POSTGRESQL, GIT;
+        }
+    }
+}

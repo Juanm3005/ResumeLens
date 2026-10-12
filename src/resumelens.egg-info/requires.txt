@@ -1,3 +1,2 @@
-
-[stage2-preview]
 pyformlang<2,>=1.0
+textX<5,>=4

@@ -1,0 +1,36 @@
+candidate {
+    personal {
+        name: "Wednesday Addams";
+    }
+    contact {
+        email: wednesday.addams@example.com;
+        phone: +57 300 123 4567;
+        github: https://github.com/wednesday-addams;
+    }
+    education {
+        degree: "Bachelor of Science";
+    }
+    experience {
+        total: 3 years;
+        job {
+            activity: "Developed web applications for organizing investigation notes.";
+            activity: "Implemented backend services using Node.js and REST APIs.";
+            activity: "Built data-processing pipelines in Python with Pandas on AWS.";
+        }
+    }
+    skills {
+        languages: PYTHON, JAVASCRIPT, SQL;
+        frameworks: NODE_JS, PANDAS, REACT;
+        databases: POSTGRESQL;
+        tools: REST_API, AWS, GIT;
+        qualifications: WEB_APPLICATIONS, DATA_PROCESSING_PIPELINE, BACKEND_SERVICES;
+    }
+    classification {
+        accepted FULL_STACK_DEVELOPER {
+            sequence: JAVASCRIPT, REACT, NODE_JS, REST_API, POSTGRESQL, GIT;
+        }
+        accepted DATA_ENGINEER {
+            sequence: PYTHON, SQL, PANDAS, POSTGRESQL, DATA_PROCESSING_PIPELINE, AWS, GIT;
+        }
+    }
+}
